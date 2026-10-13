@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpinCost - Free Fire spin calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1224; --card:#171C36; --line:#2A3158; --text:#E8ECFF; --muted:#8F98C4;
+  --dia:#46C8F5; --gold:#FFC53D; --paper:#E8ECF6; --ink:#141932; --alert:#D8402F;
+  --sans:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'Space Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.45}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:34px;line-height:1;margin:6px 0 6px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:18px;margin:0 0 12px;font-weight:600}
+.sub{color:var(--muted);margin:0 0 20px;max-width:34ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:20px}
+label{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:16px}
+select{font-weight:600;border-color:var(--dia)}
+input::placeholder{color:#5A6391}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.full{grid-column:1/-1}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+details{margin-top:4px}
+summary{cursor:pointer;color:var(--dia);font-size:14px;padding:6px 0}
+.hidden{display:none !important}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* The receipt: the one memorable element */
+.receipt{position:relative;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:14px;padding:20px 18px 22px;margin:0 0 34px;border-radius:4px 4px 0 0}
+.receipt::after{content:"";position:absolute;left:0;right:0;top:100%;height:8px;background:conic-gradient(from 135deg at 50% 0,var(--paper) 90deg,transparent 0) 0 0/16px 8px repeat-x}
+.receipt h2{font-family:var(--sans);font-weight:800;font-size:20px;margin:0 0 2px}
+.receipt .ev{font-size:13px;opacity:.7;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
+.row span:last-child{text-align:right;white-space:nowrap}
+.rule{border:0;border-top:2px dashed #9AA3C7;margin:10px 0}
+.total{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700}
+.total .big{font-family:var(--sans);font-weight:800;font-size:40px;line-height:1;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.money{font-size:16px;font-weight:700;text-align:right;margin-top:2px}
+.warn{color:var(--alert);font-weight:700}
+.ok{color:#14794B;font-weight:700}
+.note{font-family:var(--sans);font-size:13px;opacity:.8;margin-top:10px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.act{padding:13px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-weight:600;cursor:pointer}
+button.act:active{transform:scale(.98)}
+button.gold{background:var(--gold);color:#2B1F00;border-color:var(--gold)}
+.stat{font-size:15px;margin:12px 0 4px}
+.stat b{font-weight:800}
+.foot{color:var(--muted);font-size:12px;margin-top:8px}
+.toast{min-height:20px;font-size:13px;color:var(--gold);margin-top:8px}
+.ov{display:grid;grid-template-columns:1fr auto;gap:2px 12px;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;cursor:pointer}
+.ov[aria-pressed="true"]{border-color:var(--dia)}
+.ovn{font-weight:600}
+.ovt{font-size:12px;color:var(--muted)}
+.ovd{text-align:right;font-weight:800}
+.ovm{text-align:right;font-size:13px;color:var(--gold)}
+@media (prefers-reduced-motion:reduce){button.act:active{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SpinCost</h1>
+  <p class="sub">Free Fire spin calculator. See what a spin event really costs before you buy.</p>
+
+  <div class="card">
+    <h2>All events</h2>
+    <div id="overview"></div>
+    <p class="hint">Total diamonds to reach the guarantee, and the cash for the cheapest top-up packs. Tap an event to open it. "Estimate" means the later prices are not confirmed.</p>
+  </div>
+
+  <div class="card">
+    <label for="evsel">Event</label>
+    <select id="evsel"></select>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="full">
+        <label for="owned">Diamonds you have</label>
+        <input id="owned" type="number" inputmode="numeric" min="0" placeholder="e.g. 500">
+      </div>
+      <div class="full">
+        <label for="cur">Currency symbol</label>
+        <input id="cur" type="text" maxlength="4" placeholder="e.g. $">
+      </div>
+      <div class="full">
+        <label for="target" id="targetLabel">Spins you want to price (optional)</label>
+        <input id="target" type="number" inputmode="numeric" min="0" placeholder="Leave empty to use the default">
+        <p class="hint">Money amounts use the cheapest real top-up packs that cover the diamonds. Prices below are from the in-game top-up screen.</p>
+      </div>
+    </div>
+    <details>
+      <summary>Top-up prices (your country)</summary>
+      <div class="grid" style="margin-top:10px">
+        <div class="full">
+          <label for="packs">Diamond packs (diamonds=price)</label>
+          <input id="packs" type="text" placeholder="100=1450, 310=4350">
+        </div>
+        <div class="full">
+          <label for="mems">Membership offers (diamonds=price, optional)</label>
+          <input id="mems" type="text" placeholder="450=2755, 2600=14355">
+          <p class="hint">Copy these from the in-game Top-up and Membership screens. They differ by country and change over time.</p>
+        </div>
+      </div>
+    </details>
+    <details>
+      <summary>Edit event numbers</summary>
+      <div id="wheelFields" class="grid" style="margin-top:10px">
+        <div><label for="single">1 spin costs</label><input id="single" type="number" inputmode="numeric" min="1"></div>
+        <div><label for="pack">Pack costs</label><input id="pack" type="number" inputmode="numeric" min="1"></div>
+        <div><label for="packSpins">Spins in pack</label><input id="packSpins" type="number" inputmode="numeric" min="1"></div>
+        <div><label for="pity">Spins until guaranteed</label><input id="pity" type="number" inputmode="numeric" min="0" placeholder="0 = none shown"></div>
+        <p class="hint full">Copy these from the event screen. Use the "Guaranteed ... in X spin(s)" line for the last box, if the event shows one.</p>
+      </div>
+      <div id="ladderFields" class="grid hidden" style="margin-top:10px">
+        <div class="full"><label for="prices">Price of each remaining draw, in order</label><input id="prices" type="text" placeholder="29, 49, 99, 149"></div>
+        <p class="hint full">Each draw costs more than the last and prizes never repeat. Start with the price on the Spin button now. The defaults came from an unverified Google summary, so check each new price after you spin and fix the list here.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="receipt" id="receipt" aria-live="polite"></div>
+
+  <div class="card">
+    <h2>Spin log</h2>
+    <div class="btns">
+      <button class="act" id="add1">+1 spin</button>
+      <button class="act" id="addPack">+ one pack</button>
+      <button class="act" id="undo">Undo last</button>
+      <button class="act" id="reset">Reset log</button>
+    </div>
+    <div class="stat" id="logStat"></div>
+    <button class="act gold" id="share" style="width:100%;margin-top:8px">Copy my total to share</button>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+
+  <p class="foot">Not affiliated with Garena or Free Fire. Numbers are entered by hand, so check them in-game. This shows costs, not drop rates.</p>
+</div>
+
+<script>
+var EVENTS = {
+  evo:     {label:'Evo Vault S12',              type:'wheel',  single:19, pack:179, packSpins:11, pity:96, guarantee:'grand prize'},
+  flamebd: {label:'Flamedino Bundles',          type:'wheel',  single:19, pack:179, packSpins:11, pity:0,  guarantee:'grand prize'},
+  sasuke:  {label:'Sasuke Wheel',               type:'wheel',  single:19, pack:179, packSpins:11, pity:0,  guarantee:'grand prize'},
+  fist:    {label:'Ninjutsu Fist x Rasengan',   type:'wheel',  single:19, pack:179, packSpins:11, pity:0,  guarantee:'grand prize'},
+  naruto:  {label:'Naruto Ascension',           type:'wheel',  single:25, pack:100, packSpins:5,  pity:26, guarantee:'token'},
+  kurama:  {label:"Kurama's Wrath Skywing",     type:'ladder', prices:'29, 49, 99, 149, 199, 299, 599'},
+  emote:   {label:'Flamedino Emote',            type:'ladder', prices:'29, 49, 99, 149, 199, 299, 599'},
+  shot:    {label:'Flamedino Shot',             type:'ladder', prices:'29, 49, 99, 149, 199, 299, 599'},
+  custom:  {label:'Other spin event',           type:'wheel',  single:19, pack:179, packSpins:11, pity:0,  guarantee:'grand prize'}
+};
+var KEY = 'spincost.v4';
+var DEFAULT_PACKS = '100=1450, 310=4350, 520=7250, 1060=14500, 2180=29000, 5600=72500';
+var DEFAULT_MEMS = '100=405, 450=2755, 2600=14355';
+var S = load() || fresh();
+
+function fresh(){
+  var d = {ev:'evo', owned:'', packs:DEFAULT_PACKS, mems:DEFAULT_MEMS, cur:'\u20A6', target:'', data:{}};
+  for (var k in EVENTS){
+    var x = {}, e = EVENTS[k];
+    for (var f in e) x[f] = e[f];
+    x.log = [];
+    d.data[k] = x;
+  }
+  return d;
+}
+function load(){
+  try {
+    var v = JSON.parse(localStorage.getItem(KEY));
+    if (!v || !v.data) return null;
+    for (var k in EVENTS) if (!v.data[k]) return null;
+    return v;
+  } catch(e){ return null; }
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+var $ = function(id){ return document.getElementById(id); };
+function n(v){ v = Math.floor(Number(v)); return isFinite(v) && v > 0 ? v : 0; }
+function fmt(x){ return Number(x).toLocaleString(); }
+function E(){ return S.data[S.ev]; }
+function isLadder(){ return E().type === 'ladder'; }
+
+function parsePairs(str){
+  var out = [];
+  String(str || '').split(/[\n,;]+/).forEach(function(part){
+    var m = part.match(/(\d[\d,]*)\s*=\s*(\d[\d,]*\.?\d*)/);
+    if (!m) return;
+    var d = parseInt(m[1].replace(/,/g, ''), 10), p = parseFloat(m[2].replace(/,/g, ''));
+    if (d > 0 && p > 0) out.push({d:d, p:p});
+  });
+  return out;
+}
+function fmtMoney(v){
+  var s = v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(2);
+  return (S.cur || '') + s;
+}
+/* Cheapest combination of top-up packs that gives at least d diamonds */
+function topupCost(d){
+  var packs = parsePairs(S.packs);
+  if (!packs.length || d <= 0) return 0;
+  var maxP = 0, bestRate = Infinity;
+  packs.forEach(function(k){ if (k.d > maxP) maxP = k.d; if (k.p / k.d < bestRate) bestRate = k.p / k.d; });
+  var cap = d + maxP;
+  if (cap > 200000) return bestRate * d;
+  var best = [0];
+  for (var x = 1; x <= cap; x++){
+    var b = Infinity;
+    for (var i = 0; i < packs.length; i++){
+      if (x >= packs[i].d){
+        var c = best[x - packs[i].d] + packs[i].p;
+        if (c < b) b = c;
+      }
+    }
+    best[x] = b;
+  }
+  var ans = Infinity;
+  for (var y = d; y <= cap; y++) if (best[y] < ans) ans = best[y];
+  return ans;
+}
+function money(d){
+  if (d <= 0) return '';
+  var c = topupCost(d);
+  return c ? fmtMoney(c) : '';
+}
+function memNote(){
+  var packs = parsePairs(S.packs), mems = parsePairs(S.mems);
+  if (!packs.length || !mems.length) return '';
+  var pr = Math.min.apply(null, packs.map(function(k){ return k.p / k.d; }));
+  var mr = Math.min.apply(null, mems.map(function(k){ return k.p / k.d; }));
+  if (!(mr < pr)) return '';
+  return '<div class="note">Cheaper route: memberships cost as little as ' + fmtMoney(mr).replace(/(\.\d)\d+$/, '$1') + ' per diamond, vs ' + fmtMoney(pr).replace(/(\.\d)\d+$/, '$1') + ' at best for top-up packs. Memberships pay out over several days, so they only help if you can wait.</div>';
+}
+
+/* Wheel events: packs and single spins */
+function plan(count, e){
+  var ps = n(e.packSpins) || 1, single = n(e.single), pack = n(e.pack);
+  var packs = Math.floor(count / ps), rem = count - packs * ps, singles = rem;
+  if (rem > 0 && pack && rem * single >= pack){ packs++; singles = 0; }
+  return {packs:packs, singles:singles, diamonds:packs * pack + singles * single, spins:packs * ps + singles};
+}
+function afford(d, e){
+  var pack = n(e.pack), single = n(e.single), ps = n(e.packSpins) || 1;
+  var packs = pack ? Math.floor(d / pack) : 0;
+  var rem = d - packs * pack;
+  var singles = single ? Math.floor(rem / single) : 0;
+  return packs * ps + singles;
+}
+
+/* Ladder events: each draw costs more than the last */
+function priceList(e){ return (String(e.prices || '').match(/\d+/g) || []).map(Number); }
+function ladderPrice(e, i){ var l = priceList(e); return i < l.length ? l[i] : 0; }
+function ladderCost(e, from, count){
+  var t = 0;
+  for (var i = from; i < from + count; i++) t += ladderPrice(e, i);
+  return t;
+}
+function ladderAfford(e, from, d, max){
+  var c = 0, t = 0;
+  while (c < max && t + ladderPrice(e, from + c) <= d){ t += ladderPrice(e, from + c); c++; }
+  return c;
+}
+
+function logTotals(e){
+  if (e.type === 'ladder'){
+    var m = e.log.length;
+    return {spins:m, diamonds:ladderCost(e, 0, m)};
+  }
+  var a = 0, b = 0;
+  e.log.forEach(function(x){ if (x === 'p') b++; else a++; });
+  return {spins:a + b * (n(e.packSpins) || 1), diamonds:a * n(e.single) + b * n(e.pack)};
+}
+
+var DIA = '<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 22,9 12,22 2,9" fill="#46C8F5" stroke="#141932" stroke-width="1.5" stroke-linejoin="round"/><polyline points="2,9 22,9" fill="none" stroke="#141932" stroke-width="1.2"/></svg>';
+
+function renderSelect(){
+  var s = $('evsel'); s.innerHTML = '';
+  Object.keys(EVENTS).forEach(function(k){
+    var o = document.createElement('option');
+    o.value = k; o.textContent = EVENTS[k].label;
+    if (k === S.ev) o.selected = true;
+    s.appendChild(o);
+  });
+}
+function fillInputs(){
+  var e = E(), lad = e.type === 'ladder';
+  $('owned').value = S.owned; $('packs').value = S.packs; $('mems').value = S.mems; $('cur').value = S.cur; $('target').value = S.target;
+  $('wheelFields').classList.toggle('hidden', lad);
+  $('ladderFields').classList.toggle('hidden', !lad);
+  $('addPack').classList.toggle('hidden', lad);
+  $('add1').textContent = lad ? '+1 draw' : '+1 spin';
+  $('targetLabel').textContent = lad ? 'Draws you want to price (optional)' : 'Spins you want to price (optional)';
+  if (lad){
+    $('prices').value = e.prices;
+  } else {
+    $('single').value = e.single; $('pack').value = e.pack; $('packSpins').value = e.packSpins; $('pity').value = e.pity || '';
+  }
+}
+
+function renderLadder(h, e, t, owned){
+  var left = Math.max(0, priceList(e).length - t.spins);
+  var target = n(S.target);
+  var count = target ? Math.min(target, left) : left;
+  if (!count){
+    return h + '<div class="note" style="margin:0">No draws left. Reset the log if the event refreshed.</div>';
+  }
+  var cost = ladderCost(e, t.spins, count);
+  h += '<div class="row"><span>Next draw costs</span><span>' + fmt(ladderPrice(e, t.spins)) + ' dia</span></div>';
+  h += '<div class="row"><span>' + (target ? 'Draws you picked' : 'Prizes left to draw') + '</span><span>' + fmt(count) + '</span></div>';
+  h += '<hr class="rule">';
+  h += '<div class="total"><span>' + (target ? 'Total' : 'To clear all') + '</span><span class="big">' + DIA + fmt(cost) + '</span></div>';
+  if (money(cost)) h += '<div class="money">about ' + money(cost) + '</div>';
+  h += '<hr class="rule">';
+  if (S.owned !== ''){
+    var can = ladderAfford(e, t.spins, owned, left);
+    h += '<div class="row"><span>You have</span><span>' + fmt(owned) + ' dia</span></div>';
+    h += '<div class="row"><span>You can draw</span><span>' + fmt(can) + ' times</span></div>';
+    if (owned >= cost) h += '<div class="row ok"><span>Covered</span><span>' + fmt(owned - cost) + ' left over</span></div>';
+    else {
+      var short = cost - owned;
+      h += '<div class="row warn"><span>Short by</span><span>' + fmt(short) + ' dia</span></div>';
+      if (money(short)) h += '<div class="row warn"><span></span><span>about ' + money(short) + '</span></div>';
+    }
+  }
+  h += '<div class="note">Prizes never repeat, so clearing every prize guarantees the grand prize. You may get it earlier. Prices are unverified: check each new price after you spin.</div>';
+  if (owned < cost) h += memNote();
+  return h;
+}
+
+function renderReceipt(){
+  var e = E(), t = logTotals(e), owned = n(S.owned);
+  var h = '<h2>Spin receipt</h2><div class="ev">' + EVENTS[S.ev].label + '</div>';
+
+  if (t.spins > 0){
+    h += '<div class="row"><span>Already spun</span><span>' + fmt(t.spins) + '</span></div>';
+    h += '<div class="row"><span>Already spent</span><span>' + fmt(t.diamonds) + ' dia</span></div>';
+    if (money(t.diamonds)) h += '<div class="row"><span></span><span>' + money(t.diamonds) + '</span></div>';
+    h += '<hr class="rule">';
+  }
+
+  if (e.type === 'ladder'){ $('receipt').innerHTML = renderLadder(h, e, t, owned); return; }
+
+  var pityLeft = Math.max(0, n(e.pity) - t.spins);
+  var target = n(S.target);
+  var goal = target || pityLeft;
+  var goalLabel = target ? 'Spins you picked' : 'Spins to guaranteed ' + (e.guarantee || 'prize');
+
+  if (!goal){
+    h += '<div class="note" style="margin:0">' + (n(e.pity) && !pityLeft ? 'Guarantee reached. Reset the log if the counter restarted.' : 'This event shows no guarantee. Enter how many spins you want to price above.') + '</div>';
+    $('receipt').innerHTML = h; return;
+  }
+
+  var p = plan(goal, e);
+  h += '<div class="row"><span>' + goalLabel + '</span><span>' + fmt(goal) + '</span></div>';
+  if (p.packs) h += '<div class="row"><span>' + fmt(p.packs) + ' x pack (' + fmt(n(e.packSpins)) + ' spins)</span><span>' + fmt(p.packs * n(e.pack)) + '</span></div>';
+  if (p.singles) h += '<div class="row"><span>' + fmt(p.singles) + ' x single spin</span><span>' + fmt(p.singles * n(e.single)) + '</span></div>';
+  h += '<hr class="rule">';
+  h += '<div class="total"><span>' + (target ? 'Total' : 'Worst case') + '</span><span class="big">' + DIA + fmt(p.diamonds) + '</span></div>';
+  if (money(p.diamonds)) h += '<div class="money">about ' + money(p.diamonds) + '</div>';
+  h += '<hr class="rule">';
+
+  if (S.owned !== ''){
+    var can = afford(owned, e);
+    h += '<div class="row"><span>You have</span><span>' + fmt(owned) + ' dia</span></div>';
+    h += '<div class="row"><span>You can buy</span><span>' + fmt(can) + ' spins</span></div>';
+    if (owned >= p.diamonds) h += '<div class="row ok"><span>Covered</span><span>' + fmt(owned - p.diamonds) + ' left over</span></div>';
+    else {
+      var short = p.diamonds - owned;
+      h += '<div class="row warn"><span>Short by</span><span>' + fmt(short) + ' dia</span></div>';
+      if (money(short)) h += '<div class="row warn"><span></span><span>about ' + money(short) + '</span></div>';
+    }
+  }
+  var per = p.spins ? (p.diamonds / p.spins) : 0;
+  h += '<div class="note">Best price: ' + per.toFixed(1) + ' diamonds per spin. ' + (n(e.pity) && !target ? 'Worst case means you spin until the guarantee hits.' : '') + '</div>';
+  if (owned < p.diamonds) h += memNote();
+  $('receipt').innerHTML = h;
+}
+
+function renderLog(){
+  var t = logTotals(E());
+  var h = t.spins ? 'Spun <b>' + fmt(t.spins) + '</b> times, spent <b>' + fmt(t.diamonds) + '</b> diamonds' + (money(t.diamonds) ? ' (about ' + money(t.diamonds) + ')' : '') + '.' : 'No spins logged yet. Tap a button each time you spin.';
+  $('logStat').innerHTML = h;
+}
+function overviewData(){
+  var out = [];
+  Object.keys(EVENTS).forEach(function(k){
+    if (k === 'custom') return;
+    var e = S.data[k], t = logTotals(e), d = 0, tag = '';
+    if (e.type === 'ladder'){
+      var left = Math.max(0, priceList(e).length - t.spins);
+      d = ladderCost(e, t.spins, left); tag = 'Estimate: clear all prizes';
+    } else if (n(e.pity)){
+      var pl = Math.max(0, n(e.pity) - t.spins);
+      d = plan(pl, e).diamonds;
+      tag = e.guarantee === 'token' ? 'Exact: to next token' : 'Exact: to guaranteed prize';
+    } else {
+      tag = 'No guarantee shown';
+    }
+    out.push({k:k, label:EVENTS[k].label, tag:tag, d:d, m:d ? money(d) : ''});
+  });
+  return out;
+}
+function renderOverview(){
+  var box = $('overview'); box.innerHTML = '';
+  overviewData().forEach(function(r){
+    var b = document.createElement('button');
+    b.className = 'ov'; b.setAttribute('aria-pressed', r.k === S.ev ? 'true' : 'false');
+    b.innerHTML = '<span class="ovn"></span><span class="ovd"></span><span class="ovt"></span><span class="ovm"></span>';
+    b.children[0].textContent = r.label;
+    b.children[1].textContent = r.d ? fmt(r.d) + ' dia' : '-';
+    b.children[2].textContent = r.tag;
+    b.children[3].textContent = r.m;
+    b.onclick = function(){ S.ev = r.k; save(); renderSelect(); fillInputs(); renderAll(); };
+    box.appendChild(b);
+  });
+}
+function renderAll(){ renderOverview(); renderReceipt(); renderLog(); }
+
+function bind(id, fn){ $(id).addEventListener('input', function(){ fn($(id).value); save(); renderAll(); }); }
+bind('owned', function(v){ S.owned = v; });
+bind('packs', function(v){ S.packs = v; });
+bind('mems', function(v){ S.mems = v; });
+bind('cur', function(v){ S.cur = v; });
+bind('target', function(v){ S.target = v; });
+['single','pack','packSpins','pity'].forEach(function(k){ bind(k, function(v){ E()[k] = n(v); }); });
+bind('prices', function(v){ E().prices = v; });
+
+$('evsel').onchange = function(){ S.ev = $('evsel').value; save(); fillInputs(); renderAll(); };
+$('add1').onclick = function(){ E().log.push('s'); save(); renderAll(); };
+$('addPack').onclick = function(){ E().log.push('p'); save(); renderAll(); };
+$('undo').onclick = function(){ E().log.pop(); save(); renderAll(); };
+$('reset').onclick = function(){ if (E().log.length && !confirm('Clear the spin log for this event?')) return; E().log = []; save(); renderAll(); };
+
+function toast(m){ $('toast').textContent = m; setTimeout(function(){ $('toast').textContent = ''; }, 2500); }
+$('share').onclick = function(){
+  var e = E(), t = logTotals(e);
+  if (!t.spins){ toast('Log at least one spin first.'); return; }
+  var txt = 'I have spent ' + fmt(t.diamonds) + ' diamonds' + (money(t.diamonds) ? ' (about ' + money(t.diamonds) + ')' : '') + ' on ' + t.spins + ' spins in ' + EVENTS[S.ev].label + '. Check yours with SpinCost.';
+  if (navigator.share){ navigator.share({text: txt}).catch(function(){}); return; }
+  if (navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied. Paste it anywhere.'); }, function(){ toast(txt); }); }
+  else toast(txt);
+};
+
+renderSelect();
+fillInputs();
+renderAll();
+</script>
+</body>
+</html>
